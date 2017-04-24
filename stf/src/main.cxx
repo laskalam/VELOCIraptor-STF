@@ -371,6 +371,25 @@ int main(int argc,char **argv)
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
     }
+
+#ifdef CAESAR
+/*output the fof grouping*/
+    if(opt.iwritefof) {
+#ifdef USEMPI
+        if (ThisTask==0) {
+            mpi_pfof=new Int_t[Ntotal];
+            //since pfof is a local subset, not all pfof values have been set, thus initialize them to zero.
+            for (Int_t i=0;i<Ntotal;i++) mpi_pfof[i]=0;
+        }   
+        MPICollectFOF(Ntotal, pfof);
+        if (ThisTask==0) WriteFOF(opt,Ntotal,mpi_pfof, opt.group_type); 
+#else
+        WriteFOF(opt,nbodies,pfof, opt.group_type); 
+#endif
+    }
+    return 0;
+#endif
+
     if (opt.iSubSearch) {
         cout<<"Searching subset"<<endl;
         time1=MyGetTime();

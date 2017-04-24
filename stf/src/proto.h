@@ -56,7 +56,11 @@ void WriteLocalVelocityDensity(Options &opt, const Int_t nbodies, Particle * Par
 
 
 ///Writes a tipsy formatted fof.grpfile
+#ifdef CAESAR
+void WriteFOF(Options &opt, const Int_t nbodies, Int_t *pfof, int group_type);
+#else
 void WriteFOF(Options &opt, const Int_t nbodies, Int_t *pfof);
+#endif
 ///Writes a pg list file (first in effective index order of input file(s), second is particle ids
 void WritePGListIndex(Options &opt, const Int_t ngroups, const Int_t ng, Int_t *numingroup, Int_t **pglist);
 void WritePGList(Options &opt, const Int_t ngroups, const Int_t ng, Int_t *numingroup, Int_t **pglist, Int_t *ids);

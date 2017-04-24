@@ -325,6 +325,10 @@ struct Options
     char *fname,*outname,*smname,*pname,*gname;
     char *ramsessnapname;
     //@}
+#ifdef CAESAR
+    // output for halo or galaxies
+    int group_type=0; //0 for halo, 1 for galaxy
+#endif
     ///input format
     int inputtype;
     ///number of snapshots

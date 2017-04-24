@@ -72,6 +72,7 @@ using namespace H5;
 //@{
 #define HDFILLUSTISNAMES 0 
 #define HDFGADGETXNAMES 1
+#define HDFGIZMORADNAMES 2
 //@}
 
 ///This structures stores the strings defining the groups of data in the hdf input. NOTE: HERE I show the strings for Illustris format
@@ -164,7 +165,8 @@ struct HDF_Part_Info {
     
     //the HDF naming convenction for the data blocks. By default assumes ILLUSTRIS nameing convention
     //for simplicity, all particles have basic properties listed first, x,v,ids,mass in this order
-    HDF_Part_Info(int PTYPE, int hdfnametype=HDFILLUSTISNAMES) {
+    //HDF_Part_Info(int PTYPE, int hdfnametype=HDFILLUSTISNAMES) {
+    HDF_Part_Info(int PTYPE, int hdfnametype=HDFGIZMORADNAMES) {
         ptype=PTYPE;
         int itemp=0;
         if (ptype==HDFGASTYPE) {
@@ -176,6 +178,10 @@ struct HDF_Part_Info {
         names[itemp++]=H5std_string("InternalEnergy");
         names[itemp++]=H5std_string("StarFormationRate");
         //always place the metacallity at position 7 in naming array
+        if (hdfnametype==HDFGIZMORADNAMES) {
+            propindex[HDFGASIMETAL]=itemp;
+            names[itemp++]=H5std_string("Metallicity");
+        } 
         if (hdfnametype==HDFILLUSTISNAMES) {
             propindex[HDFGASIMETAL]=itemp;
             names[itemp++]=H5std_string("GFM_Metallicity");
@@ -198,6 +204,7 @@ struct HDF_Part_Info {
         names[itemp++]=H5std_string("Coordinates");
         names[itemp++]=H5std_string("Velocities");
         names[itemp++]=H5std_string("ParticleIDs");
+        names[itemp++]=H5std_string("Masses");
         if (hdfnametype==HDFILLUSTISNAMES) {
             names[itemp++]=H5std_string("Potential");
             names[itemp++]=H5std_string("SubfindDensity");
@@ -218,6 +225,12 @@ struct HDF_Part_Info {
         names[itemp++]=H5std_string("ParticleIDs");
         names[itemp++]=H5std_string("Masses");
         //for stars assume star formation and metallicy are position 4, 5 in name array
+        if (hdfnametype==HDFGIZMORADNAMES) {
+            propindex[HDFSTARIMETAL]=itemp;
+            names[itemp++]=H5std_string("Metallicity");
+            propindex[HDFSTARIAGE]=itemp;
+            names[itemp++]=H5std_string("StellarFormationTime");
+        }
         if (hdfnametype==HDFILLUSTISNAMES) {
             propindex[HDFSTARIAGE]=itemp;
             names[itemp++]=H5std_string("GFM_StellarFormationTime");

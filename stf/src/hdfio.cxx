@@ -118,12 +118,27 @@ void ReadHDF(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pbary
     int nusetypes,nbusetypes;
     int usetypes[NHDFTYPE];
     if (opt.partsearchtype==PSTALL) {
+#ifdef CAESAR
+        if (opt.group_type==0) { // this is for the haloes
+#endif
         //lets assume there are dm/stars/gas.
         nusetypes=3;
         usetypes[0]=HDFGASTYPE;usetypes[1]=HDFDMTYPE;usetypes[2]=HDFSTARTYPE;
         //now if also blackholes/sink particles increase number of types
         if (opt.iusesinkparticles) usetypes[nusetypes++]=HDFBHTYPE;
         if (opt.iusewindparticles) usetypes[nusetypes++]=HDFWINDTYPE;
+#ifdef CAESAR
+        }
+        else if (opt.group_type==1){
+        nusetypes=3;
+        usetypes[0]=HDFGASTYPE;usetypes[1]=HDFDMTYPE;usetypes[2]=HDFSTARTYPE;
+        //nusetypes=2;
+        //usetypes[0]=HDFGASTYPE;usetypes[1]=HDFSTARTYPE;
+        //now if also blackholes/sink particles increase number of types
+        if (opt.iusesinkparticles) usetypes[nusetypes++]=HDFBHTYPE;
+        if (opt.iusewindparticles) usetypes[nusetypes++]=HDFWINDTYPE;
+        }
+#endif
     }
     else if (opt.partsearchtype==PSTDARK) {
         nusetypes=1;usetypes[0]=HDFDMTYPE;

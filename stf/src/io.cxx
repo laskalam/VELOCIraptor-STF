@@ -1731,7 +1731,7 @@ void WriteVELOCIraptorConfig(Options &opt){
     HDFCatalogNames hdfnames;
     int itemp=0;
 #endif
-    if (ThisTask==0) {
+    /*if (ThisTask==0) {
         ConfigInfo config(opt);
         sprintf(fname,"%s.configuration",opt.outname);
         Fout.open(fname,ios::out);
@@ -1741,7 +1741,7 @@ void WriteVELOCIraptorConfig(Options &opt){
             Fout<<endl;
         }
         Fout.close();
-    }
+    }*/
 
 }
 #ifdef EXTENDEDHALOOUTPUT

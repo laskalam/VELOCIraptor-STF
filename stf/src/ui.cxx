@@ -295,8 +295,12 @@ void GetParamFile(Options &opt)
             exit(9);
         }
     }
-    //sprintf(fname,"%s.cfg",opt.outname);
-    //cfgfile.open(fname, ios::out);
+#ifdef CAESAR
+    sprintf(fname,"%s_%d.cfg",opt.outname, opt.group_type);
+#else
+    sprintf(fname,"%s.cfg",opt.outname);
+#endif
+    cfgfile.open(fname, ios::out);
     paramfile.clear();
     paramfile.seekg(0, ios::beg);
     if (paramfile.is_open())
@@ -316,12 +320,15 @@ void GetParamFile(Options &opt)
                     pbuff=strtok(buff," ");
                     if (pbuff==NULL) continue;
                     strcpy(vbuff, pbuff);
-                    //cfgfile<<tbuff<<"="<<vbuff<<endl;
+                    cfgfile<<tbuff<<"="<<vbuff<<endl;
                     //store/read local density distribution funciton values
                     if (strcmp(tbuff, "Output_den")==0){
                         opt.smname=new char[1024];
                         sprintf(opt.smname,"%s.localden",opt.outname);
                     }
+                    //include black holes
+                    else if (strcmp(tbuff, "Black_holes")==0)
+                        opt.iusesinkparticles = atoi(vbuff);
                     //config search type
                     else if (strcmp(tbuff, "Particle_search_type")==0)
                         opt.partsearchtype = atoi(vbuff);
@@ -495,7 +502,7 @@ void GetParamFile(Options &opt)
             }
         }
         paramfile.close();
-        //cfgfile.close();
+        cfgfile.close();
     }
 }
 

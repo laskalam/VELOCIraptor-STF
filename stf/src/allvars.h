@@ -327,7 +327,7 @@ struct Options
     //@}
 #ifdef CAESAR
     // output for halo or galaxies
-    int group_type=0; //0 for halo, 1 for galaxy
+    int group_type; //0 for halo, 1 for galaxy
 #endif
     ///input format
     int inputtype;
@@ -494,6 +494,9 @@ struct Options
     //@}
     Options()
     {
+#ifdef CAESAR
+        group_type=0;
+#endif
         L = 1.0;
         M = 1.0;
         V = 1.0;
@@ -584,7 +587,7 @@ struct Options
         icomoveunit=0;
         icosmologicalin=1;
 
-        iusesinkparticles=1;
+        iusesinkparticles=0;
         iusewindparticles=0;
 
         snapshotvalue=0;
@@ -596,7 +599,7 @@ struct Options
         iScaleLengths=0;
     }
 };
-
+/*
 struct ConfigInfo{
     //list the name of the info
     vector<string> nameinfo;
@@ -784,7 +787,7 @@ struct ConfigInfo{
         datainfo.push_back(to_string(opt.gnbhblocks));
 
     }
-};
+};*/
 
 /// N-dim grid cell
 struct GridCell

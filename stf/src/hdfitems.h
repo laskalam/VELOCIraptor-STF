@@ -307,11 +307,26 @@ inline Int_t HDF_get_nbodies(char *fname, int ptype, Options &opt)
 
     if (ptype==PSTALL) {
         //lets assume there are dm/stars/gas.
+#ifdef CAESAR
+        if (opt.group_type==0){ // this is for the haloes
+#endif
         nusetypes=3;
         usetypes[0]=HDFGASTYPE;usetypes[1]=HDFDMTYPE;usetypes[2]=HDFSTARTYPE;
         //now if also blackholes/sink particles increase number of types
         if (opt.iusesinkparticles) usetypes[nusetypes++]=HDFBHTYPE;
         if (opt.iusewindparticles) usetypes[nusetypes++]=HDFWINDTYPE;
+#ifdef CAESAR
+        }
+        else if (opt.group_type==1){ // this is for the galaxies, we do not need dm
+        nusetypes=3;
+        usetypes[0]=HDFGASTYPE;usetypes[1]=HDFDMTYPE;usetypes[2]=HDFSTARTYPE;
+        //nusetypes=2;
+        //usetypes[0]=HDFGASTYPE;usetypes[1]=HDFSTARTYPE;
+        //now if also blackholes/sink particles increase number of types
+        if (opt.iusesinkparticles) usetypes[nusetypes++]=HDFBHTYPE;
+        if (opt.iusewindparticles) usetypes[nusetypes++]=HDFWINDTYPE;
+        }
+#endif
     }
     else if (ptype==PSTDARK) {nusetypes=1;usetypes[0]=HDFDMTYPE;}
     else if (ptype==PSTGAS) {nusetypes=1;usetypes[0]=HDFGASTYPE;}

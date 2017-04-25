@@ -446,6 +446,7 @@ int main(int argc,char **argv)
     }
 
     //output results
+#ifndef CAESAR
     if(opt.iwritefof) {
 #ifdef USEMPI
         if (ThisTask==0) {
@@ -459,6 +460,7 @@ int main(int argc,char **argv)
         WriteFOF(opt,nbodies,pfof);
 #endif
     }
+#endif
 
     numingroup=BuildNumInGroup(Nlocal, ngroup, pfof);
 

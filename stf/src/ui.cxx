@@ -11,7 +11,11 @@ void GetArgs(int argc, char *argv[], Options &opt)
     int option;
     int NumArgs = 0;
     int configflag=0;
-    while ((option = getopt(argc, argv, ":C:I:i:s:Z:o:G:S:B:t:m:")) != EOF)
+#ifdef CAESAR
+    while ((option = getopt(argc, argv, ":C:I:i:s:Z:o:G:S:B:t:m:n:")) != EOF)
+#else
+    while ((option = getopt(argc, argv, ":C:I:i:s:Z:o:G:S:B:t:")) != EOF)
+#endif
     {
         switch(option)
         {
@@ -56,10 +60,16 @@ void GetArgs(int argc, char *argv[], Options &opt)
                 opt.ramsessnapname = optarg;
                 NumArgs += 2;
                 break;
+#ifdef CAESAR
             case 'm': 
                 opt.group_type = atoi(optarg);
                 NumArgs += 2;
                 break;
+            case 'n': 
+                opt.snap_num = atoi(optarg);
+                NumArgs += 2;
+                break;
+#endif
             case '?':
                 usage();
         }
@@ -296,7 +306,8 @@ void GetParamFile(Options &opt)
         }
     }
 #ifdef CAESAR
-    sprintf(fname,"%s_%d.cfg",opt.outname, opt.group_type);
+    if (opt.group_type==0) sprintf(fname,"%s/HALO_%d.cfg", opt.outname, opt.snap_num);
+    if (opt.group_type==1) sprintf(fname,"%s/GALAXY_%d.cfg", opt.outname, opt.snap_num);
 #else
     sprintf(fname,"%s.cfg",opt.outname);
 #endif

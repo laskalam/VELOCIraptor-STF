@@ -156,16 +156,12 @@ void WriteLocalVelocityDensity(Options &opt, const Int_t nbodies, Particle * Par
 /*! Writes a tipsy formatted fof.grp array file that contains the number of particles first then for each particle the group id of that particle
     group zero is untagged particles. \n
 */
-#ifdef CAESAR
-void WriteFOF(Options &opt, const Int_t nbodies, Int_t *pfof, int group_type){
-#else
 void WriteFOF(Options &opt, const Int_t nbodies, Int_t *pfof){
-#endif
     fstream Fout;
     char fname[1000];
 #ifdef CAESAR
-    if (group_type==0) sprintf(fname,"%s.fof_HALO.grp",opt.outname);
-    if (group_type==1) sprintf(fname,"%s.fof_GALAXY.grp",opt.outname);
+    if (opt.group_type==0) sprintf(fname,"%s/fof_HALO_%03d.grp",opt.outname, opt.snap_num);
+    if (opt.group_type==1) sprintf(fname,"%s/fof_GALAXY_%03d.grp",opt.outname, opt.snap_num);
 #else
     sprintf(fname,"%s.fof.grp",opt.outname);
 #endif

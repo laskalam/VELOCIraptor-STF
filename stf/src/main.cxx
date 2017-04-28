@@ -382,9 +382,9 @@ int main(int argc,char **argv)
             for (Int_t i=0;i<Ntotal;i++) mpi_pfof[i]=0;
         }   
         MPICollectFOF(Ntotal, pfof);
-        if (ThisTask==0) WriteFOF(opt,Ntotal,mpi_pfof, opt.group_type); 
+        if (ThisTask==0) WriteFOF(opt,Ntotal,mpi_pfof); 
 #else
-        WriteFOF(opt,nbodies,pfof, opt.group_type); 
+        WriteFOF(opt,nbodies,pfof); 
 #endif
     }
     return 0;

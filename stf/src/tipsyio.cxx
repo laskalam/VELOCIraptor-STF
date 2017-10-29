@@ -12,10 +12,10 @@
 ///reads a tipsy file
 void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pbaryons, Int_t nbaryons)
 {
-    struct dump tipsyheader;
-    struct gas_particle gas;
-    struct dark_particle dark;
-    struct star_particle star;
+    struct tipsy_dump tipsyheader;
+    struct tipsy_gas_particle gas;
+    struct tipsy_dark_particle dark;
+    struct tipsy_star_particle star;
     Int_t  count,oldcount,ngas,nstar,ndark, Ntot;
     double time,aadjust,z,Hubble,Hubbleflow,mtotold;
     double MP_DM=MAXVALUE, MP_B=MAXVALUE;
@@ -32,6 +32,7 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
 #ifdef USEMPI
     MPI_Status status;
     Particle *Pbuf;
+    Int_t BufSize=opt.mpiparticlebufsize;
     Pbuf=new Particle[BufSize*NProcs];
     if (ThisTask==0) Pbuf=new Particle[BufSize*NProcs];
     Int_t Nlocalbuf,ibuf=0,*Nbuf;
@@ -52,13 +53,13 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
     InitEndian();
 
     //read tipsy header.
-    Ftip.read((char*)&tipsyheader,sizeof(dump));
+    Ftip.read((char*)&tipsyheader,sizeof(tipsy_dump));
     tipsyheader.SwitchtoBigEndian();
     Ftip.close();
     //offset stream by a double (time),  an integer (nbodies) ,integer (ndim), an integer (ngas)
     //read an integer (ndark), skip an integer (nstar), then data begins.
     time=tipsyheader.time;
-    if ((opt.a-time)/opt.a>1e-2) 
+    if ((opt.a-time)/opt.a>1e-2)
     {
         cout<<"Note that atime provided != to time in tipsy file (a,t): "<<opt.a<<","<<time<<endl;
         cout<<"Setting atime to that in file "<<endl;
@@ -93,11 +94,11 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
     if (opt.p>0) {
         count=0;
         Ftip.open(opt.fname, ios::in | ios::binary);
-        Ftip.read((char*)&tipsyheader,sizeof(dump));
+        Ftip.read((char*)&tipsyheader,sizeof(tipsy_dump));
         tipsyheader.SwitchtoBigEndian();
         for (Int_t i=0;i<ngas;i++)
         {
-            Ftip.read((char*)&gas,sizeof(gas_particle));
+            Ftip.read((char*)&gas,sizeof(tipsy_gas_particle));
             gas.SwitchtoBigEndian();
             if ((opt.partsearchtype==PSTALL||opt.partsearchtype==PSTGAS)&&count==0) {
                 posfirst[0]=gas.pos[0];posfirst[1]=gas.pos[1];posfirst[2]=gas.pos[2];
@@ -108,7 +109,7 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
         if (count==0) {
         for (Int_t i=0;i<ndark;i++)
         {
-            Ftip.read((char*)&dark,sizeof(dark_particle));
+            Ftip.read((char*)&dark,sizeof(tipsy_dark_particle));
             dark.SwitchtoBigEndian();
             if ((opt.partsearchtype==PSTALL||opt.partsearchtype==PSTDARK)&&count==0) {
                 posfirst[0]=dark.pos[0];posfirst[1]=dark.pos[1];posfirst[2]=dark.pos[2];
@@ -120,7 +121,7 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
         if (count==0) {
         for (Int_t i=0;i<nstar;i++)
         {
-            Ftip.read((char*)&star,sizeof(star_particle));
+            Ftip.read((char*)&star,sizeof(tipsy_star_particle));
             star.SwitchtoBigEndian();
             if ((opt.partsearchtype==PSTALL||opt.partsearchtype==PSTSTAR)&&count==0) {
                 posfirst[0]=star.pos[0];posfirst[1]=star.pos[1];posfirst[2]=star.pos[2];
@@ -134,11 +135,11 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
 
     oldcount=count=0;
     Ftip.open(opt.fname, ios::in | ios::binary);
-    Ftip.read((char*)&tipsyheader,sizeof(dump));
+    Ftip.read((char*)&tipsyheader,sizeof(tipsy_dump));
     tipsyheader.SwitchtoBigEndian();
     for (Int_t i=0;i<ngas;i++)
     {
-        Ftip.read((char*)&gas,sizeof(gas_particle));
+        Ftip.read((char*)&gas,sizeof(tipsy_gas_particle));
         gas.SwitchtoBigEndian();
         //if particle is closer do to periodicity then alter position
         if (opt.p>0.0)
@@ -186,7 +187,7 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
     oldcount=count;
     for (Int_t i=0;i<ndark;i++)
     {
-        Ftip.read((char*)&dark,sizeof(dark_particle));
+        Ftip.read((char*)&dark,sizeof(tipsy_dark_particle));
         dark.SwitchtoBigEndian();
         if (MP_DM>dark.mass) MP_DM=dark.mass;
         //if particle is closer do to periodicity then alter position
@@ -226,7 +227,7 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
     oldcount=count;
     for (Int_t i=0;i<nstar;i++)
     {
-        Ftip.read((char*)&star,sizeof(star_particle));
+        Ftip.read((char*)&star,sizeof(tipsy_star_particle));
         star.SwitchtoBigEndian();
         //if particle is closer do to periodicity then alter position
         if (opt.p>0.0)
@@ -306,7 +307,7 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
     //}
 #endif
 
-    //calculate the interparticle spacing 
+    //calculate the interparticle spacing
 #ifdef HIGHRES
     if (opt.Neff==-1) {
         //Once smallest mass particle is found (which should correspond to highest resolution area,
@@ -321,4 +322,3 @@ void ReadTipsy(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pba
     opt.uinfo.eps*=LN;
 
 }
-

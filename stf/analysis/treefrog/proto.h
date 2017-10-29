@@ -1,6 +1,6 @@
 /*! \file proto.h
  *  \brief this file contains all function prototypes of the code
- 
+
  \section TOC Function Type Table of contents
  */
 
@@ -18,7 +18,7 @@
 void usage(void);
 void GetArgs(const int argc, char *argv[], Options &opt);
 inline void ConfigCheck(Options &opt);
-
+void GetParamFile(Options &opt);
 //@}
 
 /// \name IO routines
@@ -70,13 +70,13 @@ inline void STFReadNumGroups(unsigned long &nglocal, unsigned long &TotalNumbero
     H5File &Fhdfgroup, H5File &Fhdfsgroup, DataSet &dataset, DataSpace &dataspace,
 #endif
     int ibinary, int ifieldhalos);
-inline void STFReadNumData(unsigned long &nids, unsigned long &nsids, unsigned long &nuids, unsigned long &nsuids, 
-    unsigned long &nidstot, unsigned long &nsidstot, unsigned long &nuidstot, unsigned long &nsuidstot, 
-    fstream &Fpart, fstream &Fupart, fstream &Fspart, fstream &Fsupart, 
-    fstream &Fparttype, fstream &Fuparttype, fstream &Fsparttype, fstream &Fsuparttype, 
+inline void STFReadNumData(unsigned long &nids, unsigned long &nsids, unsigned long &nuids, unsigned long &nsuids,
+    unsigned long &nidstot, unsigned long &nsidstot, unsigned long &nuidstot, unsigned long &nsuidstot,
+    fstream &Fpart, fstream &Fupart, fstream &Fspart, fstream &Fsupart,
+    fstream &Fparttype, fstream &Fuparttype, fstream &Fsparttype, fstream &Fsuparttype,
 #ifdef USEHDF
-    H5File &Fhdfpart, H5File &Fhdfspart, H5File &Fhdfupart, H5File &Fhdfsupart, 
-    H5File &Fhdfparttype, H5File &Fhdfsparttype, H5File &Fhdfuparttype, H5File &Fhdfsuparttype, 
+    H5File &Fhdfpart, H5File &Fhdfspart, H5File &Fhdfupart, H5File &Fhdfsupart,
+    H5File &Fhdfparttype, H5File &Fhdfsparttype, H5File &Fhdfuparttype, H5File &Fhdfsuparttype,
     DataSet &dataset, DataSpace &dataspace,
 #endif
     int ibinary, int ifieldhalos, int itypematch);
@@ -88,6 +88,8 @@ inline void STFReadNumData(unsigned long &nids, unsigned long &nsids, unsigned l
 //@{
 ///Writes the merger tree
 void WriteHaloMergerTree(Options &opt, ProgenitorData **p, HaloTreeData *h);
+///writes descendant halo merger tree
+void WriteHaloMergerTree(Options &opt, DescendantData **p, HaloTreeData *h);
 ///writes a full graph
 void WriteHaloGraph(Options &opt, ProgenitorData **p, DescendantData **d, HaloTreeData *h);
 ///writes a cross comparison between two catalogs
@@ -108,7 +110,7 @@ Int_t MPIReadHaloGroupCatalogDataNum(string &infile, int mpi_ninput=0, int ibina
 Int_t MPIReadHaloGroupCatalogDataParticleNum(string &infile, int mpi_ninput=0, int ibinary=1, int ifieldhalos=1, int itypesort=ALLTYPEMATCH);
 ///Reads data to allocate memory, useful for mpi
 HaloData *MPIReadHaloGroupCatalogDataAllocation(string &infile, Int_t &numhalos, int mpi_ninput=0, int ibinary=1, int ifieldhalos=1, int itypesort=ALLTYPEMATCH);
-///Reads VELOCIraptor like Group Catalog Data with memory already allocated for MPI version. 
+///Reads VELOCIraptor like Group Catalog Data with memory already allocated for MPI version.
 void MPIReadHaloGroupCatalogData(string &infile, Int_t &numhalos, HaloData *&Halo, int mpi_ninput=0, int ibinary=1, int ifieldhalos=1, int itypesort=ALLTYPEMATCH, int iverbose=0);
 ///load balance input data
 void MPILoadBalanceSnapshots(Options &);
@@ -121,15 +123,39 @@ int MPIReadLoadBalance(Options &);
 ///\name  for mpi related meshing of data
 /// see \ref mpiroutines.cxx for implementation
 //@{
+///update descendant based progenitor information across mpi domain
 void MPIUpdateProgenitorsUsingDescendants(Options &opt, HaloTreeData *&pht, DescendantDataProgenBased **&pprogendescen, ProgenitorData **&pprogen);
+///update progenitor based descendant information across mpi domain
+void MPIUpdateDescendantUsingProgenitors(Options &opt, HaloTreeData *&pht, ProgenitorDataDescenBased **&pdescenprogen);
+///update descendant information across mpi domain
+void MPIUpdateDescendants(Options &opt, HaloTreeData *&pht, DescendantData **&pdescen);
+
+///helper routines to send information
+void MPISendProgenitorsUsingDescendants(int recvtask, int isnap, HaloTreeData *&pht, DescendantDataProgenBased **&pprogendescen, ProgenitorData **&pprogen);
+///helper routines to recv and process information
+void MPIRecvProgenitorsUsingDescendants(int sendtask, int isnap, HaloTreeData *&pht, DescendantDataProgenBased **&pprogendescen, ProgenitorData **&pprogen);
+
+///helper routines to send information
+void MPISendDescendantsUsingProgenitors(int recvtask, int isnap,HaloTreeData *&pht, ProgenitorDataDescenBased **&pdescenprogen);
+///helper routines to recv and process information
+void MPIRecvDescendantsUsingProgenitors(int sendtask, int isnap,HaloTreeData *&pht, ProgenitorDataDescenBased **&pdescenprogen);
+
+
+///helper routines to send information
+void MPISendDescendants(int recvtask, int isnap,HaloTreeData *&pht, DescendantData **&pdescen);
+///helper routines to recv and process information
+void MPIRecvDescendants(int sendtask, int isnap,HaloTreeData *&pht, DescendantData **&pdescen);
 //@}
 #endif
 
 //@}
 
-/// \name Subroutines calculates merits between 
-/// see \ref crossmatch.cxx for implementation
+/// \name Subroutines calculates merits between
+/// see \ref crosscheck.cxx for implementation
 //@{
+
+///Calculate merit between a match
+Double_t CalculateMerit(Options &opt, UInt_t n1, UInt_t n2, HaloData &h1, HaloData &h2, UInt_t hindex=0,UInt_t *sharepartlist=NULL, Double_t *ranking2=NULL);
 
 /// determine the cross matches of halos in h1 in "progenitor list" h2
 /// the routine also stores whether the progenitor list has been updated through the ilistupdated variable.
@@ -137,38 +163,103 @@ void MPIUpdateProgenitorsUsingDescendants(Options &opt, HaloTreeData *&pht, Desc
 /// and will only search current halo list if the reference list doesn't meet the criteria for viable progenitors
 /// which is currently whether there are any in the reference list
 ProgenitorData *CrossMatch(Options &opt, const long unsigned nhalos1, const long unsigned nhalos2, HaloData *&h1, HaloData* &h2, unsigned int*&pfof2, int &ilistupdated, int istepval=1, ProgenitorData *refprogen=NULL);
-///clean cross matches of duplicate entries so that a progenitor can have ONLY ONE descendent. 
+///get Progenitor match for individual object, return if match found
+int CrossMatchProgenitorIndividual(Options &opt, Int_t i,
+    const long unsigned nhalos1, const long unsigned nhalos2,
+    HaloData *&h1, HaloData *&h2,
+    unsigned int *&pfof2,
+    int istepval,
+    ProgenitorData *&p1,
+    unsigned int *&sharelist,
+    unsigned int *&halolist,
+    long unsigned offset
+    //unsigned int *&sharepartlist,
+    //unsigned int *&pranking2,
+    //Double_t *&rankingsum
+);
+
+///clean cross matches of duplicate entries so that a progenitor can have ONLY ONE descendent.
 void CleanCrossMatch(const int istepval, const long unsigned nhalos1, const long unsigned nhalos2, HaloData *&h1, HaloData *&h2, ProgenitorData *&pprogen);
-///fill in empty links of the reference list with another progenitor list produced using same reference snapshot but different linking snapshot. 
-///Allows for multiple steps in snapshots to be used. 
+///fill in empty links of the reference list with another progenitor list produced using same reference snapshot but different linking snapshot.
+///Allows for multiple steps in snapshots to be used.
 void UpdateRefProgenitors(Options &opt, const Int_t numhalos,ProgenitorData *&pref, ProgenitorData *&ptemp, DescendantDataProgenBased **&pprogendescen, Int_t itime);
-///similar to \ref CrossMatch but for descendants
-DescendantData *CrossMatchDescendant(Options &opt, const long unsigned nhalos1, const long unsigned nhalos2, HaloData *&h1, HaloData* &h2, unsigned int*&pfof2, int &ilistupdated, int istepval=1, DescendantData *refdescen=NULL);
-///similar to \ref CleanCrossMatch but for descendants
-void CleanCrossMatchDescendant(const int istepval, const long unsigned nhalos1, const long unsigned nhalos2, HaloData *&h1, HaloData *&h2, DescendantData *&pdescen);
-///similar to \ref UpdateRefProgenitors but for descendants
-void UpdateRefDescendants(Options &opt, const Int_t numhalos,DescendantData *&pref, DescendantData *&ptemp);
 ///builds the possible set of descendents using candidate progenitors
 void BuildProgenitorBasedDescendantList(Int_t itimeprogen, Int_t itimedescen, Int_t nhalos, ProgenitorData *&pprogen, DescendantDataProgenBased **&pprogendescen, int istep=1);
-/// removes descendant links of individual halo 
+/// removes descendant links of individual halo
 void RemoveLinksProgenitorBasedDescendantList(Int_t itimedescen, Int_t ihaloindex, ProgenitorData &pprogen, DescendantDataProgenBased **&pprogendescen);
 ///Cleans up progenitor list using candidate descendent list build using progenitor search. Ensures objects ony have a single descendant
-void CleanProgenitorsUsingDescendants(Int_t i, HaloTreeData *&pht, DescendantDataProgenBased **&pprogendescen, ProgenitorData **&pprogen);
+void CleanProgenitorsUsingDescendants(Int_t i, HaloTreeData *&pht, DescendantDataProgenBased **&pprogendescen, ProgenitorData **&pprogen, int iopttemporalmerittype);
+
+///similar to \ref CrossMatch but for descendants
+DescendantData *CrossMatchDescendant(Options &opt, const long unsigned nhalos1, const long unsigned nhalos2, HaloData *&h1, HaloData* &h2, unsigned int*&pfof2, int &ilistupdated, int istepval=1, unsigned int *ranking2=0, DescendantData *refdescen=NULL);
+///get descendant match for individual object, return if match found
+int CrossMatchDescendantIndividual(Options &opt, Int_t i,
+    const long unsigned nhalos1, const long unsigned nhalos2,
+    HaloData *&h1, HaloData *&h2,
+    unsigned int *&pfof2,
+    int istepval, int initdtopval,
+    DescendantData *&d1,
+    unsigned int *&sharelist,
+    unsigned int *&halolist,
+    long unsigned offset, long unsigned offset2,
+    unsigned int *&sharepartlist,
+    unsigned int *&pranking2,
+    Double_t *&rankingsum
+);
+
+///updates the haloids stored in the descendant list
+void UpdateDescendantIndexing(const int istepval, const long unsigned nhalos1, const long unsigned nhalos2, HaloData *&h1, HaloData *&h2, DescendantData *&p1);
+///prunes the descendant list
+void CleanCrossMatchDescendant(Options &opt, Int_t itime, HaloTreeData *&pht, ProgenitorDataDescenBased **&pdescenprogen, DescendantData **&pdescen);
+
+///builds the possible set of progenitors using candidate descendants, similar to \ref BuildProgenitorBasedDescendantList.
+void BuildDescendantBasedProgenitorList(Int_t itimedescen, Int_t nhalos, DescendantData *&pdecen, ProgenitorDataDescenBased *&pdescenprogen, int istep=1);
+///updates descendants data structure so that an object knows what type of progenitor it is to its descendants. Specifically this finds all progenitors of
+///a halo looking back a time istep and ranks their descendant to progenitor match based on their merit (a temporally local ranking)
+void UpdateDescendantUsingDescendantBasedProgenitorList(Int_t nhalos, DescendantData *&pdescen, ProgenitorDataDescenBased *&pdescenprogen, int istep, Double_t meritlimit);
+/// Updates the descandant data structure with new information and removes/updates old links
+void UpdateRefDescendants(Options &opt, const Int_t numhalos,DescendantData *&pref, DescendantData *&ptemp, ProgenitorDataDescenBased **&pdescenprogen, Int_t itime);
+///removes progenitor links of individual halo stored in the \ref ProgenitorDataDescenBased structure.
+void RemoveLinksDescendantBasedProgenitorList(Int_t itime, Int_t ihaloindex, DescendantData &pdescen, ProgenitorDataDescenBased **&pdescenprogen);
+///Adds progenitor links of individual halo stored in the \ref ProgenitorDataDescenBased structure.
+void AddLinksDescendantBasedProgenitorList(Int_t itime, Int_t ihaloindex, DescendantData &pdescen, ProgenitorDataDescenBased **&pdescenprogen);
+
+///Rank the progenitors in the descendant tree using the descendants and a general temporal merit.
+void RankDescendantProgenitors(Int_t i, HaloTreeData *&pht, ProgenitorDataDescenBased **&pdescenprogen, DescendantData **&pdecen, int iopttemporalmerittype);
+///clean the descendant list to adjust descedant rankings to minimize number of objects with no primary progenitors
+void CleanDescendantsForMissingProgenitors(Options &opt, Int_t itime, HaloTreeData *&pht, ProgenitorDataDescenBased **&pdescenprogen, DescendantData **&pdescen);
+
+///Reranks descendants based on descendant to progenitor ranking and then merit.
+void RerankDescendants(Options &opt, HaloTreeData *&pht, DescendantData **&pdescen);
+
 
 //@}
 
 /// \name for mapping ids to index routines
-/// see \ref crossmatch.cxx for implementation
+/// see \ref idroutines.cxx for implementation
 //@{
+///wrapper routine that adjusts data to use memory efficient maps
+void MemoryEfficientMap(Options &opt,HaloTreeData *&pht);
+///generate a map for particle ids to index and store it in the set, which can be searched to
+///relate pid to index
+map<IDTYPE, IDTYPE> ConstructMemoryEfficientPIDStoIndexMap(Options &opt, HaloTreeData *&pht);
+///save the particle id to index map
+void SavePIDStoIndexMap(Options &,map<IDTYPE, IDTYPE>&);
+///read the particle id to index map from file
+int ReadPIDStoIndexMap(Options &, map<IDTYPE, IDTYPE>&);
+
+///map particle id to index position
+void MapPIDStoIndex(Options &opt, HaloTreeData *&pht, map<IDTYPE, IDTYPE> &);
 ///map particle id to index position
 void MapPIDStoIndex(Options &opt, HaloTreeData *&pht);
+
 ///make sure particle ids are acceptable values for generating links
 void IDcheck(Options &opt,HaloTreeData *&pht);
+///simple mapping function
+void simplemap(IDTYPE &i);
 
-void simplemap(long unsigned &i);
-
-//adjust the mappable halo ids by adding a temporally unique value to each id
-//useful to ensure that ids between VELOCIraptor and the tree match
+///adjust the mappable halo ids by adding a temporally unique value to each id
+///useful to ensure that ids between VELOCIraptor and the tree match
 void UpdateHaloIDs(Options &opt, HaloTreeData *&pht);
 
 //@}
@@ -177,33 +268,6 @@ void UpdateHaloIDs(Options &opt, HaloTreeData *&pht);
 //@{
 ///map particle id to index position
 int CheckType(unsigned int t, int tmatch);
-//@}
-
-/// \name Extra routines
-/// see \ref crossmatch.cxx for implementation
-//@{
-
-///build group size array
-Int_t *BuildNumInGroup(const Int_t nbodies, const Int_t numgroups, Int_t *pfof);
-///build array such that array is pglist[group][]={particle list}
-Int_t **BuildPGList(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t *pfof);
-///build the group particle index list (doesn't assume particles are in ID order and stores index of particle)
-Int_t **BuildPGList(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t *pfof, Particle *Part);
-///build pglist but doesn't assume particles are in ID order
-Int_t **BuildPGList(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t *pfof, Int_t *ids);
-///build the group particle arrays need for unbinding procedure
-Particle **BuildPartList(const Int_t numgroups, Int_t *numingroup, Int_t **pglist, Particle* Part);
-///build a particle list subset using array of indices
-Particle *BuildPart(Int_t numingroup, Int_t *pglist, Particle* Part);
-///build the Head array which points to the head of the group a particle belongs to
-Int_t *BuildHeadArray(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t **pglist);
-///build the Next array which points to the next particle in the group
-Int_t *BuildNextArray(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t **pglist);
-///build the Len array which stores the length of the group a particle belongs to 
-Int_t *BuildLenArray(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t **pglist);
-///build the GroupTail array which stores the Tail of a group
-Int_t *BuildGroupTailArray(const Int_t nbodies, const Int_t numgroups, Int_t *numingroup, Int_t **pglist);
-
 //@}
 
 /// \name Extra utility routines
@@ -219,5 +283,3 @@ double MyGetTime();
 //@}
 
 #endif
-
-

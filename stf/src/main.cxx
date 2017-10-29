@@ -7,7 +7,7 @@
     outputs the group ids (in two different fashions see \ref io.cxx) and can also analyze the structures
     (see \ref substructureproperties.cxx and \ref io.cxx).
 
-    \todo remove array mpi_idlist and mpi_indexlist as these arrays are unnecessary 
+    \todo remove array mpi_idlist and mpi_indexlist as these arrays are unnecessary
     \todo alter unbinding/sortbybindingenergy calls since seems a waste of cpu cycles
 */
 
@@ -31,10 +31,10 @@ int main(int argc,char **argv)
     MPI_Init(&argc,&argv);
 #endif
 
-    //find out how big the SPMD world is 
-    MPI_Comm_size(MPI_COMM_WORLD,&NProcs); 
-    //and this processes' rank is 
-    MPI_Comm_rank(MPI_COMM_WORLD,&ThisTask); 
+    //find out how big the SPMD world is
+    MPI_Comm_size(MPI_COMM_WORLD,&NProcs);
+    //and this processes' rank is
+    MPI_Comm_rank(MPI_COMM_WORLD,&ThisTask);
 #ifdef USEOPENMP
     // Check the threading support level
     if (provided < required)
@@ -74,16 +74,25 @@ int main(int argc,char **argv)
     GetArgs(argc, argv, opt);
     cout.precision(10);
 
+#ifdef USEMPI
+#ifdef USEADIOS
+    //init adios
+    adios_init_noxml(MPI_COMM_WORLD);
+    //specify the buffer size (use the tot particle buffer size in bytes and convert to MB)
+    adios_set_max_buffer_size(opt.mpiparticletotbufsize/1024/1024);
+#endif
+#endif
+
     //variables
-    //number of particles, (also number of baryons if use dm+baryon search) 
+    //number of particles, (also number of baryons if use dm+baryon search)
     //to store (point to) particle data
-    Int_t nbodies,nbaryons,ndark; 
+    Int_t nbodies,nbaryons,ndark;
     Particle *Pall,*Part,*Pbaryons;
     KDTree *tree;
 
     //number in subset, number of grids used if iSingleHalo==0;
     Int_t nsubset, ngrid;
-    //number of groups, temp num groups, and number of halos 
+    //number of groups, temp num groups, and number of halos
     Int_t ngroup, ng, nhalos;
 
     //to store group value (pfof), and also arrays to parse particles
@@ -117,41 +126,32 @@ int main(int argc,char **argv)
     //read particle information and allocate memory
     time1=MyGetTime();
     //for MPI determine total number of particles AND the number of particles assigned to each processor
-#ifdef USEMPI
     if (ThisTask==0) {
-#endif
-    cout<<"Read header ... "<<endl;
-    nbodies=ReadHeader(opt);
-    if (opt.iBaryonSearch>0) {
-        for (int i=0;i<NBARYONTYPES;i++) Ntotalbaryon[i]=Nlocalbaryon[i]=0;
-        nbaryons=0;
-        int pstemp=opt.partsearchtype;
-        opt.partsearchtype=PSTGAS;
-        nbaryons+=ReadHeader(opt);
-        opt.partsearchtype=PSTSTAR;
-        nbaryons+=ReadHeader(opt);
-        opt.partsearchtype=PSTBH;
-        nbaryons+=ReadHeader(opt);
-        opt.partsearchtype=pstemp;
+        cout<<"Read header ... "<<endl;
+        nbodies=ReadHeader(opt);
+        if (opt.iBaryonSearch>0) {
+            for (int i=0;i<NBARYONTYPES;i++) Ntotalbaryon[i]=Nlocalbaryon[i]=0;
+            nbaryons=0;
+            int pstemp=opt.partsearchtype;
+            opt.partsearchtype=PSTGAS;
+            nbaryons+=ReadHeader(opt);
+            opt.partsearchtype=PSTSTAR;
+            nbaryons+=ReadHeader(opt);
+            opt.partsearchtype=PSTBH;
+            nbaryons+=ReadHeader(opt);
+            opt.partsearchtype=pstemp;
+        }
+        else nbaryons=0;
     }
-    else nbaryons=0;
 #ifdef USEMPI
-    }
     MPI_Bcast(&nbodies,1, MPI_Int_t,0,MPI_COMM_WORLD);
     if (opt.iBaryonSearch>0) MPI_Bcast(&nbaryons,1, MPI_Int_t,0,MPI_COMM_WORLD);
     //initial estimate need for memory allocation assuming that work balance is not greatly off
 #endif
-#ifndef MPIREDUCEMEM
-#ifdef USEMPI
-    if (ThisTask==0) 
-#endif
-    cout<<"There are "<<nbodies<<" particles that require "<<nbodies*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
-#ifdef USEMPI
-    if (opt.iBaryonSearch>0 && ThisTask==0) cout<<"There are "<<nbaryons<<" baryon particles that require "<<nbaryons*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
-#else
-    if (opt.iBaryonSearch>0) cout<<"There are "<<nbaryons<<" baryon particles that require "<<nbaryons*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
-#endif
-#endif
+    if (ThisTask==0) {
+        cout<<"There are "<<nbodies<<" particles in total that require "<<nbodies*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
+        if (opt.iBaryonSearch>0) cout<<"There are "<<nbaryons<<" baryon particles in total that require "<<nbaryons*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
+    }
 
     //note that for nonmpi particle array is a contiguous block of memory regardless of whether a separate baryon search is required
 #ifndef USEMPI
@@ -169,58 +169,53 @@ int main(int argc,char **argv)
 #else
     //for mpi however, it is not possible to have a simple contiguous block of memory IFF a separate baryon search is required.
     //for the simple reason that the local number of particles changes to ensure large fof groups are local to an mpi domain
-    //however, when reading data, it is much simplier to have a contiguous block of memory, sort that memory (if necessary) 
+    //however, when reading data, it is much simplier to have a contiguous block of memory, sort that memory (if necessary)
     //and then split afterwards the dm particles and the baryons
-    Nlocal=nbodies/NProcs*MPIProcFac;
-    Nlocalbaryon[0]=nbaryons/NProcs*MPIProcFac;
-    NExport=NImport=Nlocal*MPIExportFac;
-#ifdef MPIREDUCEMEM
-    MPINumInDomain(opt);
     if (NProcs==1) {Nlocal=Nmemlocal=nbodies;NExport=NImport=1;}
-    cout<<ThisTask<<" There are "<<Nmemlocal<<" particles that require "<<Nmemlocal*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
-    if (opt.iBaryonSearch>0) cout<<ThisTask<<"There are "<<Nmemlocalbaryon<<" baryon particles that require "<<Nmemlocalbaryon*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
-#endif
-    if (opt.iBaryonSearch>0 && opt.partsearchtype!=PSTALL) {
+    else {
 #ifdef MPIREDUCEMEM
+        //if allocating reasonable amounts of memory, use MPIREDUCEMEM
+        //this determines number of particles in the mpi domains
+        MPINumInDomain(opt);
+        cout<<ThisTask<<" There are "<<Nlocal<<" particles and have allocated enough memory for "<<Nmemlocal<<" requiring "<<Nmemlocal*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
+        if (opt.iBaryonSearch>0) cout<<ThisTask<<"There are "<<Nlocalbaryon[0]<<" baryon particles and have allocated enough memory for "<<Nmemlocalbaryon<<" requiring "<<Nmemlocalbaryon*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
+#else
+        //otherwise just base on total number of particles * some factor and initialise the domains
+        MPIDomainExtent(opt);
+        MPIDomainDecomposition(opt);
+        Nlocal=nbodies/NProcs*MPIProcFac;
+        Nmemlocal=Nlocal;
+        Nlocalbaryon[0]=nbaryons/NProcs*MPIProcFac;
+        Nmemlocalbaryon=Nlocalbaryon[0];
+        NExport=NImport=Nlocal*MPIExportFac;
+        cout<<ThisTask<<" Have allocated enough memory for "<<Nmemlocal<<" requiring "<<Nmemlocal*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
+        if (opt.iBaryonSearch>0) cout<<" Have allocated enough memory for "<<Nmemlocalbaryon<<" baryons particles requiring "<<Nmemlocalbaryon*sizeof(Particle)/1024./1024./1024.<<"GB of memory "<<endl;
+#endif
+    }
+    cout<<ThisTask<<" will also require additional memory for FOF algorithms and substructure search. Largest mem needed for preliminary FOF search. Rough estimate is "<<Nlocal*(sizeof(Int_tree_t)*8)/1024./1024./1024.<<"GB of memory"<<endl;
+    if (opt.iBaryonSearch>0 && opt.partsearchtype!=PSTALL) {
         Pall=new Particle[Nmemlocal+Nmemlocalbaryon];
         Part=&Pall[0];
         Pbaryons=&Pall[Nlocal];
-#else
-
-        Pall=new Particle[Nlocal+Nlocalbaryon[0]];
-        Part=&Pall[0];
-        Pbaryons=&Pall[Nlocal];
-#endif
         nbaryons=Nlocalbaryon[0];
     }
     else {
-#ifdef MPIREDUCEMEM
         Part=new Particle[Nmemlocal];
-#else
-        Part=new Particle[Nlocal];
-#endif
         Pbaryons=NULL;
         nbaryons=0;
     }
 #endif
 
     //now read particle data
-#ifdef USEMPI
-    if (ThisTask==0) 
-#endif
+    if (ThisTask==0)
     cout<<"Loading ... "<<endl;
     ReadData(opt, Part, nbodies, Pbaryons, nbaryons);
 #ifdef USEMPI
-    //if mpi and want separate baryon search then once particles are loaded into contigous block of memory and sorted according to type order, 
+    //if mpi and want separate baryon search then once particles are loaded into contigous block of memory and sorted according to type order,
     //allocate memory for baryons
     if (opt.iBaryonSearch>0 && opt.partsearchtype!=PSTALL) {
-#ifdef MPIREDUCEMEM
         Part=new Particle[Nmemlocal];
         Pbaryons=new Particle[Nmemlocalbaryon];
-#else
-        Part=new Particle[Nlocal];
-        Pbaryons=new Particle[Nlocalbaryon[0]];
-#endif
         nbaryons=Nlocalbaryon[0];
         for (Int_t i=0;i<Nlocal;i++) Part[i]=Pall[i];
 
@@ -230,7 +225,7 @@ int main(int argc,char **argv)
 #endif
 
 #ifdef USEMPI
-    if (ThisTask==0) 
+    if (ThisTask==0)
 #endif
     cout<<"Done Loading"<<endl;
     time1=MyGetTime()-time1;
@@ -245,9 +240,11 @@ int main(int argc,char **argv)
 #else
     cout<<"TIME::"<<ThisTask<<" took "<<time1<<" to load "<<nbodies<<endl;
 #endif
-    
+
     //write out the configuration used by velociraptor having read in the data (as input data can contain cosmological information)
     WriteVELOCIraptorConfig(opt);
+    WriteSimulationInfo(opt);
+    WriteUnitInfo(opt);
 
     //set filenames if they have been passed
 #ifdef USEMPI
@@ -256,7 +253,7 @@ int main(int argc,char **argv)
     if (opt.smname!=NULL) sprintf(fname4,"%s",opt.smname);
 #endif
 
-    //read local velocity data or calculate it 
+    //read local velocity data or calculate it
     //(and if STRUCDEN flag or HALOONLYDEN is set then only calculate the velocity density function for objects within a structure
     //as found by SearchFullSet)
 #if defined (STRUCDEN) || defined (HALOONLYDEN)
@@ -301,7 +298,7 @@ int main(int argc,char **argv)
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
         //if compiled to determine inclusive halo masses, then for simplicity, I assume halo id order NOT rearranged!
-        //this is not necessarily true if baryons are searched for separately. 
+        //this is not necessarily true if baryons are searched for separately.
         if (opt.iInclusiveHalo) {
             pdatahalos=new PropData[nhalos+1];
             Int_t *numinhalos=BuildNumInGroup(nbodies, nhalos, pfof);
@@ -337,7 +334,7 @@ int main(int argc,char **argv)
         gveldisp=GetCellVelDisp(opt,nbodies,Part,ngrid,grid,gvel);
         opt.HaloSigmaV=0;for (int j=0;j<ngrid;j++) opt.HaloSigmaV+=pow(gveldisp[j].Det(),1./3.);opt.HaloSigmaV/=(double)ngrid;
 
-        //now that have the grid cell volume quantities and local volume density 
+        //now that have the grid cell volume quantities and local volume density
         //can determine the logarithmic ratio between the particle velocity density and that predicted by the background velocity distribution
         GetDenVRatio(opt,nbodies,Part,ngrid,grid,gvel,gveldisp);
         //WriteDenVRatio(opt,nbodies,Part);
@@ -359,10 +356,9 @@ int main(int argc,char **argv)
         ///\todo Communication Buffer size determination and allocation. For example, eventually need something like FoFDataIn = (struct fofdata_in *) CommBuffer;
         ///At the moment just using NExport
         NExport=Nlocal*MPIExportFac;
-        mpi_foftask=new Int_t[Nlocal];
-        MPISetTaskID(nbodies);
+        mpi_foftask=MPISetTaskID(nbodies);
 
-        //Now when MPI invoked this returns pfof after local linking and linking across and also reorders groups 
+        //Now when MPI invoked this returns pfof after local linking and linking across and also reorders groups
         //according to size and localizes the particles belong to the same group to the same mpi thread.
         //after this is called Nlocal is adjusted to the local subset where groups are localized to a given mpi thread.
         pfof=SearchSubset(opt,Nlocal,Nlocal,Part,ngroup);
@@ -371,34 +367,14 @@ int main(int argc,char **argv)
         MPI_Barrier(MPI_COMM_WORLD);
 #endif
     }
-
-#ifdef CAESAR
-/*output the fof grouping*/
-    if(opt.iwritefof) {
-#ifdef USEMPI
-        if (ThisTask==0) {
-            mpi_pfof=new Int_t[Ntotal];
-            //since pfof is a local subset, not all pfof values have been set, thus initialize them to zero.
-            for (Int_t i=0;i<Ntotal;i++) mpi_pfof[i]=0;
-        }   
-        MPICollectFOF(Ntotal, pfof);
-        if (ThisTask==0) WriteFOF(opt,Ntotal,mpi_pfof); 
-#else
-        WriteFOF(opt,nbodies,pfof); 
-#endif
-    }
-    return 0;
-#endif
-
     if (opt.iSubSearch) {
         cout<<"Searching subset"<<endl;
         time1=MyGetTime();
         //if groups have been found (and localized to single MPI thread) then proceed to search for subsubstructures
-        SearchSubSub(opt, nbodies, Part, pfof,ngroup,nhalos,pdata);
+        SearchSubSub(opt, nbodies, Part, pfof,ngroup,nhalos,pdatahalos);
         time1=MyGetTime()-time1;
         cout<<"TIME::"<<ThisTask<<" took "<<time1<<" to search for substructures "<<Nlocal<<" with "<<nthreads<<endl;
     }
-
     pdata=new PropData[ngroup+1];
     //if inclusive halo mass required
     if (opt.iInclusiveHalo && ngroup>0) {
@@ -414,7 +390,8 @@ int main(int argc,char **argv)
             pfofbaryons=&pfofall[nbodies];
         }
         //if FOF search overall particle types then running sub search over just dm and need to associate baryons to just dm particles must determine number of baryons, sort list, run search, etc
-        else {
+        //but only need to run search if substructure has been searched
+        else if (opt.iSubSearch==1){
             nbaryons=0;
             ndark=0;
             for (Int_t i=0;i<nbodies;i++) {
@@ -422,7 +399,7 @@ int main(int argc,char **argv)
                 else nbaryons++;
             }
             Pbaryons=NULL;
-            pfofall=SearchBaryons(opt, nbaryons, Pbaryons, ndark, Part, pfof, ngroup,nhalos,opt.iseparatefiles,opt.iInclusiveHalo,pdata);
+            SearchBaryons(opt, nbaryons, Pbaryons, ndark, Part, pfof, ngroup,nhalos,opt.iseparatefiles,opt.iInclusiveHalo,pdata);
         }
         time1=MyGetTime()-time1;
         cout<<"TIME::"<<ThisTask<<" took "<<time1<<" to search baryons  with "<<nthreads<<endl;
@@ -446,7 +423,26 @@ int main(int argc,char **argv)
     }
 
     //output results
-#ifndef CAESAR
+    //if want to ignore any information regard particles themselves as particle PIDS are meaningless
+    //which might be useful for runs where not interested in tracking just halo catalogues (save for
+    //approximate methods like PICOLA. Here it writes desired output and exits
+    if(opt.inoidoutput){
+        numingroup=BuildNumInGroup(Nlocal, ngroup, pfof);
+        CalculateHaloProperties(opt,Nlocal,Part,ngroup,pfof,numingroup,pdata);
+        WriteProperties(opt,ngroup,pdata);
+        delete[] numingroup;
+        delete[] pdata;
+        delete[] Part;
+#ifdef USEMPI
+#ifdef USEADIOS
+        adios_finalize(ThisTask);
+#endif
+        MPI_Finalize();
+#endif
+        return 0;
+    }
+
+    //if want a simple tipsy still array listing particles group ids in input order
     if(opt.iwritefof) {
 #ifdef USEMPI
         if (ThisTask==0) {
@@ -460,8 +456,6 @@ int main(int argc,char **argv)
         WriteFOF(opt,nbodies,pfof);
 #endif
     }
-#endif
-
     numingroup=BuildNumInGroup(Nlocal, ngroup, pfof);
 
     //if separate files explicitly save halos, associated baryons, and subhalos separately
@@ -525,14 +519,17 @@ int main(int argc,char **argv)
 
     delete[] numingroup;
     delete[] pdata;
+    delete[] Part;
 
     tottime=MyGetTime()-tottime;
     cout<<"TIME::"<<ThisTask<<" took "<<tottime<<" in all"<<endl;
 
 #ifdef USEMPI
+#ifdef USEADIOS
+    adios_finalize(ThisTask);
+#endif
     MPI_Finalize();
 #endif
 
     return 0;
 }
-

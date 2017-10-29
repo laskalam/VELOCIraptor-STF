@@ -204,7 +204,7 @@ struct HDF_Part_Info {
             else if (hdfnametype==HDFGIZMONAMES) {
                 propindex[HDFGASIMETAL]=itemp;
                 //names[itemp++]=H5std_string("Metallicity");//11 metals stored in this data set
-                names[itemp++]=H5std_string("Metallicity_00");//only grab the first of the 11, which is total
+                names[itemp++]=H5std_string("Metallicity");//only grab the first of the 11, which is total
                 names[itemp++]=H5std_string("ElectronAbundance");
                 names[itemp++]=H5std_string("FractionH2");
                 names[itemp++]=H5std_string("GrackleHI");
@@ -273,7 +273,7 @@ struct HDF_Part_Info {
                 names[itemp++]=H5std_string("StellarFormationTime");
                 propindex[HDFSTARIMETAL]=itemp;
                 //names[itemp++]=H5std_string("Metallicity");//11 metals stored in this data set
-                names[itemp++]=H5std_string("Metallicity_00");//only grab the first of the 11, which is total
+                names[itemp++]=H5std_string("Metallicity");//only grab the first of the 11, which is total
                 names[itemp++]=H5std_string("AGS-Softening Dataset");
                 names[itemp++]=H5std_string("ParticleChildIDsNumber");
                 names[itemp++]=H5std_string("ParticleIDGenerationNumber");

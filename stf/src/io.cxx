@@ -1979,6 +1979,7 @@ void WriteVELOCIraptorConfig(Options &opt){
     DataSet *propdataset;
     int itemp=0;
 #endif
+
 #if defined(USEHDF)||defined(USEADIOS)
     DataGroupNames datagroupnames;
 #endif

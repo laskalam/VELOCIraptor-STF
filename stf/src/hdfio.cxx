@@ -122,14 +122,14 @@ void ReadHDF(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pbary
         nusetypes=0;
         //assume existance of dark matter and gas
         usetypes[nusetypes++]=HDFGASTYPE;usetypes[nusetypes++]=HDFDMTYPE;
-        if (opt.iuseextradarkparticles) usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;
+        if (opt.iuseextradarkparticles) {usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;}
         if (opt.iusestarparticles) usetypes[nusetypes++]=HDFSTARTYPE;
         if (opt.iusesinkparticles) usetypes[nusetypes++]=HDFBHTYPE;
         if (opt.iusewindparticles) usetypes[nusetypes++]=HDFWINDTYPE;
     }
     else if (opt.partsearchtype==PSTDARK) {
         nusetypes=1;usetypes[0]=HDFDMTYPE;
-        if (opt.iuseextradarkparticles) usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;
+        if (opt.iuseextradarkparticles) {usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;}
         if (opt.iBaryonSearch) {
             nbusetypes=1;usetypes[nusetypes+nbusetypes++]=HDFGASTYPE;
             if (opt.iusestarparticles) usetypes[nusetypes+nbusetypes++]=HDFSTARTYPE;
@@ -140,7 +140,7 @@ void ReadHDF(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pbary
     else if (opt.partsearchtype==PSTSTAR) {nusetypes=1;usetypes[0]=HDFSTARTYPE;}
     else if (opt.partsearchtype==PSTBH) {
         nusetypes=1;usetypes[0]=HDFBHTYPE;
-        if (opt.iuseextradarkparticles) usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;
+        if (opt.iuseextradarkparticles) {usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;}
     }
 
     Int_t i,j,k,n,nchunk,count,bcount,itemp,count2,bcount2;
@@ -1182,7 +1182,12 @@ void ReadHDF(Options &opt, Particle *&Part, const Int_t nbodies,Particle *&Pbary
         cout<<ThisTask<<" is reading file "<<i<<endl;
         ///\todo should be more rigorous with try/catch stuff
         //open particle group structures
-        for (j=0;j<nusetypes;j++) {k=usetypes[j]; partsgroup[i*NHDFTYPE+k]=Fhdf[i].openGroup(hdf_gnames.part_names[k]);}
+        for (j=0;j<nusetypes;j++) {k=usetypes[j];
+                                   cout << "type:"<<k <<"\n"<<endl;
+                                   cout <<hdf_gnames.part_names[k]<<"\n" <<endl;
+                                   partsgroup[i*NHDFTYPE+k]=Fhdf[i].openGroup(hdf_gnames.part_names[k]);
+                                  }
+        cout << "Done\n" << endl;
         if (opt.partsearchtype==PSTDARK && opt.iBaryonSearch) for (j=1;j<=nbusetypes;j++) {k=usetypes[j];partsgroup[i*NHDFTYPE+k]=Fhdf[i].openGroup(hdf_gnames.part_names[k]);}
         //open data structures that exist for all data blocks
         for (itemp=0;itemp<NHDFDATABLOCKALL;itemp++) {

@@ -171,7 +171,8 @@ struct HDF_Part_Info {
 
     //the HDF naming convenction for the data blocks. By default assumes ILLUSTRIS nameing convention
     //for simplicity, all particles have basic properties listed first, x,v,ids,mass in this order
-    HDF_Part_Info(int PTYPE, int hdfnametype=HDFEAGLENAMES) {
+    //HDF_Part_Info(int PTYPE, int hdfnametype=HDFEAGLENAMES) {
+    HDF_Part_Info(int PTYPE, int hdfnametype=HDFGIZMONAMES) {
         ptype=PTYPE;
         int itemp=0;
         //gas
@@ -228,6 +229,7 @@ struct HDF_Part_Info {
             if(hdfnametype!=HDFEAGLENAMES) names[itemp++]=H5std_string("Velocities");
             else names[itemp++]=H5std_string("Velocity");
             names[itemp++]=H5std_string("ParticleIDs");
+            names[itemp++]=H5std_string("Masses");
             if (hdfnametype==HDFILLUSTISNAMES) {
                 names[itemp++]=H5std_string("Potential");
                 names[itemp++]=H5std_string("SubfindDensity");
@@ -347,7 +349,7 @@ inline Int_t HDF_get_nbodies(char *fname, int ptype, Options &opt)
         //lets assume there are dm/gas.
         nusetypes=0;
         usetypes[nusetypes++]=HDFGASTYPE;usetypes[nusetypes++]=HDFDMTYPE;
-        if (opt.iuseextradarkparticles) usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;
+        if (opt.iuseextradarkparticles) {usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;}
         if (opt.iusestarparticles) usetypes[nusetypes++]=HDFSTARTYPE;
         if (opt.iusesinkparticles) usetypes[nusetypes++]=HDFBHTYPE;
         if (opt.iusewindparticles) usetypes[nusetypes++]=HDFWINDTYPE;
@@ -355,7 +357,7 @@ inline Int_t HDF_get_nbodies(char *fname, int ptype, Options &opt)
     }
     else if (ptype==PSTDARK) {
         nusetypes=1;usetypes[0]=HDFDMTYPE;
-        if (opt.iuseextradarkparticles) usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;
+        if (opt.iuseextradarkparticles) {usetypes[nusetypes++]=HDFDM1TYPE;usetypes[nusetypes++]=HDFDM2TYPE;}
     }
     else if (ptype==PSTGAS) {nusetypes=1;usetypes[0]=HDFGASTYPE;}
     else if (ptype==PSTSTAR) {nusetypes=1;usetypes[0]=HDFSTARTYPE;}

@@ -332,7 +332,7 @@ struct Options
 {
     ///\name filenames
     //@{
-    char *fname,*outname,*smname,*pname,*gname;
+    char *fname,*outname,*smname,*pname,*gname, *Outname;
     char *ramsessnapname;
     //@}
 #ifdef CAESAR
@@ -565,7 +565,7 @@ struct Options
         num_files=1;
         nsnapread=1;
 
-        fname=outname=smname=pname=gname=outname=NULL;
+        fname=Outname=smname=pname=gname=outname=NULL;
 
         Bsize=16;
         Nvel=32;

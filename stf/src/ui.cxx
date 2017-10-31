@@ -41,7 +41,7 @@ void GetArgs(int argc, char *argv[], Options &opt)
                 NumArgs += 2;
                 break;
             case 'o':
-                opt.outname = optarg;
+                opt.Outname = optarg;
                 NumArgs += 2;
                 break;
             case 'G':
@@ -344,8 +344,8 @@ void GetParamFile(Options &opt)
         }
     }
 #ifdef CAESAR
-    if (opt.group_type==0) sprintf(fname,"%s/HALO_%d.cfg", opt.outname, opt.snap_num);
-    if (opt.group_type==1) sprintf(fname,"%s/GALAXY_%d.cfg", opt.outname, opt.snap_num);
+    if (opt.group_type==0) sprintf(fname,"%s/HALO_%d.cfg", opt.Outname, opt.snap_num);
+    if (opt.group_type==1) sprintf(fname,"%s/GALAXY_%d.cfg", opt.Outname, opt.snap_num);
 #else
     sprintf(fname,"%s.cfg",opt.outname);
 #endif

@@ -179,7 +179,12 @@ void WriteLocalVelocityDensity(Options &opt, const Int_t nbodies, Particle * Par
 void WriteFOF(Options &opt, const Int_t nbodies, Int_t *pfof){
     fstream Fout;
     char fname[1000];
+#ifdef CAESAR		
+    if (opt.group_type==0) sprintf(fname,"%s/fof_HALO_%03d.grp",opt.Outname, opt.snap_num);		
+    if (opt.group_type==1) sprintf(fname,"%s/fof_GALAXY_%03d.grp",opt.Outname, opt.snap_num);
+#else
     sprintf(fname,"%s.fof.grp",opt.outname);
+#endif
     cout<<"saving fof data to "<<fname<<endl;
     Fout.open(fname,ios::out);
     if (opt.partsearchtype==PSTALL) {
